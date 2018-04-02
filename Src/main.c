@@ -302,7 +302,7 @@ void _Error_Handler(char * file, int line)
 	  		    GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
 
 
-	  			if (now == 0) //Если произошел спад
+	  			if (now == GPIO_PIN_RESET) //Если произошел спад
 	  			{
 	  					TIM3->ARR = 65535;	//Сбрасываем показания таймера
 	  					TIM3->CNT = 0;
@@ -324,17 +324,17 @@ void _Error_Handler(char * file, int line)
 	  		}
 	  		//Дальше идёт проверка остальных кнопок
 	  				//if (GPIOB->IDR & GPIO_IDR_IDR1) //B1
-	  	        	if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1 == 1))
+	  	        	if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1 == GPIO_PIN_SET))
 	  				{
 	  					t2 = 1500;
 	  				}
 	  				//else if (GPIOC->IDR & GPIO_IDR_IDR15) //C15
-	  				else if (GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_15 == 1))
+	  				else if (GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_15 == GPIO_PIN_SET))
 	  				{
 	  					t2 = 2500;
 	  				}
 	  				//else if (GPIOA->IDR & GPIO_IDR_IDR11) //A11
-	  				else if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_11 == 1))
+	  				else if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_11 == GPIO_PIN_SET))
 	                  {
 	  					t2 = 3500;
 	  				}
