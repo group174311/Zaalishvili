@@ -274,7 +274,10 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
+{
+	if (htim == &htim3) {
+}
 /* USER CODE END 4 */
 
 /**
@@ -282,7 +285,7 @@ static void MX_GPIO_Init(void)
   * @param  None
   * @retval None
   */
-void _Error_Handler(char * file, int line)
+ void _Error_Handler(char * file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
