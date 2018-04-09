@@ -277,6 +277,28 @@ static void MX_GPIO_Init(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 {
 	if (htim == &htim3) {
+
+			//Считываем логическое состояние вывода светодиода, инвертируем состояние и выбираем период
+			//if (GPIOC-> IDR & GPIO_IDR_IDR13)
+			if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET)
+			{
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13) == GPIO_PIN_RESET;
+				HAL_TIM_SET_AUTORELOAD(htim3, t2 - 1);
+			}
+//			{
+//				GPIOC->BSRR = GPIO_BSRR_BR13;
+//				TIM3->ARR = t2 - 1;
+//			}
+			else
+			{
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13) == GPIO_PIN_RESET;
+				HAL_TIM_SET_AUTORELOAD(htim3, t1 - 1);
+			}
+//			{
+//				GPIOC->BSRR = GPIO_BSRR_BS13;
+//				TIM3->ARR = t1 - 1;
+//			}
+	}
 }
 /* USER CODE END 4 */
 
@@ -296,11 +318,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 	  		//uint16_t now = (GPIOB->IDR & GPIO_IDR_IDR6);
 	  		 //uint8_t now = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_6);
 	  		GPIO_PinState now = HAL_GPIO_ReadPin(GPIOB, GPIO_Pin_6);
-	  		if ( now ^ last_state) //если произошло изменение состояния кнопки
+	  		if ( now!= last_state) //если произошло изменение состояния кнопки
 	  		{
 	  			last_state = now; //меняем последнее состояние кнопки на текущее
 	  			//TIM3->CR1 &= ~TIM_CR1_CEN; //останаливаем таймер
-	  			TIM_Cmd(TIM3, DISABLE);
+	  			//TIM_Cmd(TIM3, DISABLE);
+	  			HAL_TIM_Base_Stop(&htim3);
 	  			//GPIOC->BSRR = GPIO_BSRR_BS13; //Выключаем диод
 	  		    GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
 
