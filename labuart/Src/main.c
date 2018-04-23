@@ -47,15 +47,18 @@
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim3;
 
+UART_HandleTypeDef huart1;
+
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint16_t t1 = 500, t2 = 500;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -92,9 +95,10 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM3_Init();
+  MX_USART1_UART_Init();
 
   /* USER CODE BEGIN 2 */
-  GPIO_PinState last_state = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6);
+uint8_t str[] = "hellow UART\r\n";
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -104,40 +108,8 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-	  GPIO_PinState now = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6);
-	 	  if (now != last_state) {
-	 		  HAL_TIM_Base_Stop(&htim3);
-
-	 		  if (now) {
-	 			  uint16_t ticks =  __HAL_TIM_GET_COUNTER(&htim3);
-	 			  if (ticks >= 1000)
-	 				  t2_val = ticks;
-	 			  __HAL_TIM_SET_AUTORELOAD(&htim3, t1);
-	 		  }
-	 		  else {
-	 			  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
-	 			  __HAL_TIM_SET_AUTORELOAD(&htim3, UINT16_MAX);
-	 		  }
-
-	 		  last_state = now;
-	 		  //    		TIM3->CNT = 0;
-	 		  __HAL_TIM_SET_COUNTER(&htim3, 0);
-	 		  HAL_TIM_Base_Start(&htim3);
-	 	  }
-
-	 	  if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) == GPIO_PIN_RESET) {
-	 		  t1 = 1500;
-	 	  }
-	 	  else if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_15) == GPIO_PIN_RESET) {
-	 		  t1 = 2500;
-	 	  }
-	 	  else if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_11) == GPIO_PIN_RESET) {
-	 		  t1 = 3500;
-	 	  }
-	 	  else {
-	 		  t1 = 500;
-	 	  }
-	   }
+HAL_UART_Transmit(&huart1, str, sizeof(str) +1, HAL_MAX_DELAY);
+HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 
@@ -179,16 +151,16 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  /**Configure the Systick interrupt time
-  */
-HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+    /**Configure the Systick interrupt time 
+    */
+  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
-  /**Configure the Systick
-  */
-HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+    /**Configure the Systick 
+    */
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
-/* SysTick_IRQn interrupt configuration */
-HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+  /* SysTick_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
 /* TIM3 init function */
@@ -218,6 +190,25 @@ static void MX_TIM3_Init(void)
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* USART1 init function */
+static void MX_USART1_UART_Init(void)
+{
+
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -266,12 +257,12 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PA0 PA1 PA2 PA3 
                            PA4 PA5 PA6 PA7 
-                           PA8 PA9 PA10 PA12 
-                           PA13 PA14 PA15 */
+                           PA8 PA12 PA13 PA14 
+                           PA15 */
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3 
                           |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7 
-                          |GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_12 
-                          |GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
+                          |GPIO_PIN_8|GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14 
+                          |GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -307,22 +298,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
-{
-	if (htim == &htim3) {
 
-	//    if (GPIOC->IDR & GPIO_IDR_IDR13) {
-		if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == GPIO_PIN_SET) {
-			__HAL_TIM_SET_AUTORELOAD(&htim3, t2);
-//			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
-	    }
-	    else {
-	    	__HAL_TIM_SET_AUTORELOAD(&htim3, t1);
-//	    	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
-	    }
-		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-	}
-}
 /* USER CODE END 4 */
 
 /**
@@ -330,11 +306,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
   * @param  None
   * @retval None
   */
- void _Error_Handler(char * file, int line)
+void _Error_Handler(char * file, int line)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-	GPIO_PinState last_state = HAL_GPIO_ReadPin(GPIOB, GPIO_Pin_6);
   while(1) 
   {
   }
