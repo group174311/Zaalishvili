@@ -224,6 +224,39 @@ static void MX_TIM3_Init(void)
 
 }
 
+/* TIM3 init function */
+static void MX_TIM3_Init(void)
+{
+
+  TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
+
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 36000;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 500;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /** Configure pins as 
         * Analog 
         * Input 
@@ -337,6 +370,78 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim)
 	GPIO_PinState last_state = HAL_GPIO_ReadPin(GPIOB, GPIO_Pin_6);
   while(1) 
   {
+	  //Тело основного цикла программы
+	  		//uint16_t now = (GPIOB->IDR & GPIO_IDR_IDR6);
+	  		 //uint8_t now = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_6);
+	  		GPIO_PinState now = HAL_GPIO_ReadPin(GPIOB, GPIO_Pin_6);
+	  		if ( now!= last_state) //если произошло изменение состояния кнопки
+	  		{
+	  			last_state = now; //меняем последнее состояние кнопки на текущее
+	  			//TIM3->CR1 &= ~TIM_CR1_CEN; //останаливаем таймер
+	  			//TIM_Cmd(TIM3, DISABLE);
+	  			HAL_TIM_Base_Stop(&htim3);
+	  			//GPIOC->BSRR = GPIO_BSRR_BS13; //Выключаем диод
+	  		    GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
+
+
+	  			if (now == GPIO_PIN_RESET) //Если произошел спад
+	  			{
+	  					TIM3->ARR = 65535;	//Сбрасываем показания таймера
+	  					TIM3->CNT = 0;
+	  					NVIC_DisableIRQ(TIM3_IRQn);	//Отключаем прерывания
+	  					now = 1; //Устанавливаем флаг счёта
+	  			}
+	  			else
+	  			{
+	  					uint16_t period= TIM_GetCounter(TIM3);
+	  					if ( period >= 200)
+	  					t1 = period;
+	  					TIM3->ARR = t1 - 1;	//Сбрасываем показания таймера
+	  					TIM3->CNT = 0;
+	  					NVIC_EnableIRQ(TIM3_IRQn);	//Включаем прерывания таймера
+	  					now = 0;  //Сбрасываем флаг счёта
+	  			}
+	  			//TIM3->CR1 |= TIM_CR1_CEN; //запускаем таймер
+	  			TIM_Cmd(TIM3, ENABLE);
+	  		}
+	  		//Дальше идёт проверка остальных кнопок
+	  				//if (GPIOB->IDR & GPIO_IDR_IDR1) //B1
+	  	        	if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1 == GPIO_PIN_SET))
+	  				{
+	  					t2 = 1500;
+	  				}
+	  				//else if (GPIOC->IDR & GPIO_IDR_IDR15) //C15
+	  				else if (GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_15 == GPIO_PIN_SET))
+	  				{
+	  					t2 = 2500;
+	  				}
+	  				//else if (GPIOA->IDR & GPIO_IDR_IDR11) //A11
+	  				else if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_11 == GPIO_PIN_SET))
+	                  {
+	  					t2 = 3500;
+	  				}
+	  				else t2 = 500;
+	  	}
+	  }
+
+	  //Функция обработчика прерывания от таймера 3
+	  void TIM3_IRQHandler(void)
+	  {
+	  	//Сбрасываем флаг переполнения таймера
+	  	TIM3->SR &= ~TIM_SR_UIF;	//Clean UIF Flag
+
+	  	//Считываем логическое состояние вывода светодиода, инвертируем состояние и выбираем период
+	  	//if (GPIOC-> IDR & GPIO_IDR_IDR13)
+	  	if (GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_13 == 1))
+	  	{
+	  		GPIOC->BSRR = GPIO_BSRR_BR13;
+	  		TIM3->ARR = t2 - 1;
+	  	}
+	  	else
+	  	{
+	  		GPIOC->BSRR = GPIO_BSRR_BS13;
+	  		TIM3->ARR = t1 - 1;
+	  	}
   }
   /* USER CODE END Error_Handler_Debug */ 
 }
